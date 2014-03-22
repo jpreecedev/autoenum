@@ -1,5 +1,4 @@
 # Auto Enum
-========
 
 This little project shows how to use T4 templates to generate enumerations from your SQL Server database lookup tables with C#.
 
