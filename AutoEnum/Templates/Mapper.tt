@@ -1,0 +1,27 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ include file="SqlHelper.ttinclude" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Data" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Data.SqlClient" #>
+<#@ output extension=".cs" #>
+using System;
+
+namespace AutoEnum
+{
+<# foreach (var table in GetTables()) { #>
+    /// <summary>
+    /// The <#= table.Key #> enumeration
+    /// </summary>
+    public enum <#= table.Key #>
+    {
+	<# for(int i = 0; i < table.Count(); i++) { #>
+    <# var item = table.ElementAt(i); #>
+<#= item.Name.Replace(" ","").Replace("/", "") #> = <#= item.Id #><# if(i < table.Count() - 1) { #>,
+    <# } #><# } #>
+   
+    };
+
+<#}#>}

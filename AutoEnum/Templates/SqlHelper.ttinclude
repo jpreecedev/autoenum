@@ -1,0 +1,39 @@
+﻿<#+
+	public static IEnumerable<IGrouping<string, DatabaseTable>> GetTables()
+	{
+		string connectionString = "Server=.;Database=AdventureWorks2012;Trusted_Connection=True;";
+
+		List<DatabaseTable> tables = new List<DatabaseTable>();
+		using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+		{
+			SqlCommand command = new SqlCommand("DECLARE @tmpTable TABLE ( [RowNumber] int, [Schema] nvarchar(15), [TableName] nvarchar(20), [ColumnName] nvarchar(20), [Sql] nvarchar(200) ) INSERT INTO @tmpTable ([RowNumber], [Schema], [TableName], [ColumnName], [Sql]) SELECT ROW_NUMBER() OVER (ORDER BY KU.TABLE_SCHEMA) AS RowNumber, KU.TABLE_SCHEMA, KU.table_name, column_name, 'SELECT ''' + KU.TABLE_SCHEMA + ''', ''' + KU.TABLE_NAME + ''', Name, CAST(ROW_NUMBER() OVER (ORDER BY Name) AS INT) AS RowNumber FROM ' + KU.TABLE_SCHEMA + '.' + KU.TABLE_NAME as [Sql] FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS TC INNER JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS KU ON TC.CONSTRAINT_TYPE = 'PRIMARY KEY' AND TC.CONSTRAINT_NAME = KU.CONSTRAINT_NAME and ku.table_name in (SELECT TABLE_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME LIKE '%Type' GROUP BY TABLE_NAME, TABLE_SCHEMA) DECLARE @counter INT = 1 DECLARE @total INT = (SELECT COUNT([Schema]) FROM @tmpTable) DECLARE @sqlCommand varchar(1000) WHILE (@counter < @total + 1) BEGIN DECLARE @sql nvarchar(200) = (SELECT [Sql] FROM @tmpTable WHERE RowNumber = @counter) IF (@counter > 1) SET @sqlCommand = CONCAT(@sqlCommand, ' UNION ') SET @sqlCommand = CONCAT(@sqlCommand, @sql) SET @counter = @counter + 1 END EXEC (@sqlCommand)", sqlConnection);
+			sqlConnection.Open();
+
+			var reader = command.ExecuteReader();
+			while (reader.Read())
+			{
+                DatabaseTable table = new DatabaseTable();
+                table.Schema = reader.GetString(0);
+                table.TableName = reader.GetString(1);
+                table.Name = reader.GetString(2);
+                table.Id = reader.GetInt32(3);
+
+				tables.Add(table);
+			}
+		}
+
+		return tables.GroupBy(t => t.TableName);
+	}
+
+	public class DatabaseTable
+	{
+        public int Id { get; set; }
+
+		public string Name { get; set; }
+
+		public string TableName { get; set; }
+
+        public string Schema { get; set; }
+	}
+
+#>
